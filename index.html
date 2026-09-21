@@ -153,11 +153,8 @@ h1 { font-size: 1.3rem; margin-bottom: 5px; }
 </div>
 
 <script>
-// ==========================================
-// VUL HIER JOUW FIREBASE REALTIME DATABASE URL IN:
-// (Vergeet de /schema.json aan het einde niet)
-// ==========================================
-const FIREBASE_URL = "https://tennisapp-f018c-default-rtdb.europe-west1.firebasedatabase.app/";
+// Firebase Realtime Database URL met /schema.json gecorrigeerd
+const FIREBASE_URL = "https://tennisapp-f018c-default-rtdb.europe-west1.firebasedatabase.app/schema.json";
 
 // De 8 vaste spelers
 const vasteSpelers = ["Wim", "Ben", "Piet", "Harry", "Herman", "Kees", "Edwin", "Maik"];
@@ -182,17 +179,26 @@ const standaardSchema = [
 let schemaData = [];
 let geselecteerdeMatchId = null;
 let geselecteerdeSpelerIndex = null;
+let isModalOpen = false;
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
 
 // Haal de live data op uit Firebase
 async function laadLiveData() {
+  if (isModalOpen) return;
+
   try {
     const response = await fetch(FIREBASE_URL);
+    if (!response.ok) throw new Error("Ophalen mislukt");
+    
     const data = await response.json();
     
     if (data) {
       schemaData = data;
     } else {
-      // Als de database nog leeg is, vul hem met het standaardschema
       schemaData = JSON.parse(JSON.stringify(standaardSchema));
       await slaLiveDataOp();
     }
@@ -233,8 +239,8 @@ function bouwSchema() {
     w.spelers.forEach((speler, index) => {
       spelersHtml += `
         <div class="player-wrapper">
-          <span class="player" onclick="openRuilModal(${w.id}, ${index})">${speler}</span>
-          ${w.spelers.length > 1 ? `<button class="btn-remove" title="Verwijder speler" onclick="verwijderSpeler(${w.id},${index})">✕</button>` : ''}
+          <span class="player" onclick="openRuilModal(${w.id}, ${index})">${escapeHtml(speler)}</span>
+          ${w.spelers.length > 1 ? `<button class="btn-remove" title="Verwijder speler" onclick="event.stopPropagation(); verwijderSpeler(${w.id},${index})">✕</button>` : ''}
         </div>`;
     });
     spelersHtml += '</div>';
@@ -243,7 +249,7 @@ function bouwSchema() {
     const waLink = `https://api.whatsapp.com/send?text=${waText}`;
 
     card.innerHTML = `
-      <div class="datum-header">${w.datum}</div>
+      <div class="datum-header">${escapeHtml(w.datum)}</div>
       <div class="match-row">
         ${spelersHtml}
         <div class="checkbox-container">
@@ -291,7 +297,7 @@ function updateTellers() {
     if (data.totaal > 0 || vasteSpelers.includes(speler)) {
       totaalGrid.innerHTML += `
         <div class="totaal-item">
-          <div class="totaal-naam">${speler}</div>
+          <div class="totaal-naam">${escapeHtml(speler)}</div>
           <div class="totaal-aantal">${data.totaal}x</div>
           <div class="totaal-details">${data.gespeeld} gespeeld</div>
         </div>
@@ -310,6 +316,7 @@ async function updateStatus(id, isChecked) {
 }
 
 function openRuilModal(matchId, spelerIndex) {
+  isModalOpen = true;
   geselecteerdeMatchId = matchId;
   geselecteerdeSpelerIndex = spelerIndex;
 
@@ -323,14 +330,14 @@ function openRuilModal(matchId, spelerIndex) {
   ruilSelect.innerHTML = '<option value="">-- Kies speler om mee te ruilen --</option>';
   item.spelers.forEach((s, idx) => {
     if (idx !== spelerIndex) {
-      ruilSelect.innerHTML += `<option value="${idx}">${s}</option>`;
+      ruilSelect.innerHTML += `<option value="${idx}">${escapeHtml(s)}</option>`;
     }
   });
 
   const spelerSelect = document.getElementById('spelerSelectie');
   spelerSelect.innerHTML = '<option value="">-- Kies een vaste speler --</option>';
   vasteSpelers.forEach(speler => {
-    spelerSelect.innerHTML += `<option value="${speler}">${speler}</option>`;
+    spelerSelect.innerHTML += `<option value="${escapeHtml(speler)}">${escapeHtml(speler)}</option>`;
   });
 
   document.getElementById('ruilModal').style.display = 'flex';
@@ -357,19 +364,20 @@ async function bevestigActie() {
     item.spelers[geselecteerdeSpelerIndex] = selectWaarde;
   }
 
+  sluitModal();
   bouwSchema();
   await slaLiveDataOp();
-  sluitModal();
 }
 
 function openToevoegModal(matchId) {
+  isModalOpen = true;
   geselecteerdeMatchId = matchId;
   document.getElementById('nieuwInvallerNaam').value = '';
 
   const select = document.getElementById('nieuwSpelerSelectie');
   select.innerHTML = '<option value="">-- Kies uit vaste spelers --</option>';
   vasteSpelers.forEach(speler => {
-    select.innerHTML += `<option value="${speler}">${speler}</option>`;
+    select.innerHTML += `<option value="${escapeHtml(speler)}">${escapeHtml(speler)}</option>`;
   });
 
   document.getElementById('toevoegModal').style.display = 'flex';
@@ -386,10 +394,12 @@ async function bevestigToevoegen() {
 
   if (naamOmToeTeVoegen !== '') {
     item.spelers.push(naamOmToeTeVoegen);
+    sluitModal();
     bouwSchema();
     await slaLiveDataOp();
+  } else {
+    sluitModal();
   }
-  sluitModal();
 }
 
 async function verwijderSpeler(matchId, index) {
@@ -407,11 +417,12 @@ async function verwijderSpeler(matchId, index) {
 }
 
 function sluitModal() {
+  isModalOpen = false;
   document.getElementById('ruilModal').style.display = 'none';
   document.getElementById('toevoegModal').style.display = 'none';
 }
 
-// Initialisatie & elke 10 seconden automatisch verversen voor live updates van anderen
+// Start-up en automatische verversing om de 10 seconden
 laadLiveData();
 setInterval(laadLiveData, 10000);
 </script>
