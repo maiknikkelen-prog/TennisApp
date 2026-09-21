@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tennis Speelschema 2026-2027</title>
+
+<!-- PWA Web App Instellingen voor Installatie op Mobiel -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tennis 2026">
+<link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Tennis%20Speelschema%22%2C%22short_name%22%3A%22Tennis%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%232c3e50%22%2C%22theme_color%22%3A%22%232c3e50%22%7D">
+
+<style>
+:root {
+  --primary: #2c3e50;
+  --accent: #27ae60;
+  --whatsapp: #25D366;
+  --bg: #f4f6f7;
+  --card-bg: #ffffff;
+  --text: #333;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { background-color: var(--bg); color: var(--text); padding: 15px; padding-bottom: 40px; }
+header { background: var(--primary); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
+h1 { font-size: 1.3rem; margin-bottom: 5px; }
+
+/* Status indicator */
+.sync-status { text-align: center; font-size: 0.8rem; color: #7f8c8d; margin-top: -10px; margin-bottom: 15px; }
+.status-online { color: var(--accent); font-weight: bold; }
+
+/* Dashboard & Tellers */
+.stats-bar { background: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; font-weight: bold; }
+.counter { color: var(--accent); font-size: 1.2rem; }
+
+/* Spelers Totaaltelling Dashboard */
+.totaal-card { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--accent); }
+.totaal-card h2 { font-size: 1.05rem; color: var(--primary); margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.totaal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media(min-width: 400px) { .totaal-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.totaal-item { background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e9ecef; text-align: center; }
+.totaal-naam { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
+.totaal-aantal { font-size: 1.1rem; color: var(--accent); font-weight: bold; margin: 2px 0; }
+.totaal-details { font-size: 0.75rem; color: #666; }
+
+/* Datum Kaarten */
+.datum-card { background: var(--card-bg); border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); }
+.datum-header { font-size: 1.05rem; font-weight: bold; color: var(--primary); margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+
+/* Spelers Lay-out */
+.match-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.players-box { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; flex-grow: 1; }
+@media(min-width: 400px) { .players-box { grid-template-columns: repeat(4, 1fr); } }
+
+.player-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; }
+.player { width: 100%; background: #eef2f3; padding: 10px 5px; border-radius: 6px; font-weight: 500; cursor: pointer; border: 1px solid #dcdde1; font-size: 0.9rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player:hover { background: #dcdde1; }
+
+.btn-remove { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 0.75rem; cursor: pointer; margin-top: 3px; display: flex; align-items: center; justify-content: center; }
+
+/* Actieknoppen onderaan de kaart */
+.card-actions { display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+.btn-add-player { background: transparent; border: 1px dashed var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
+.btn-add-player:hover { background: rgba(39, 174, 96, 0.1); }
+
+.btn-whatsapp { background: var(--whatsapp); color: white; border: none; padding: 6px 12px; border-radius: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+.btn-whatsapp:hover { opacity: 0.9; }
+
+/* Checkbox Styling */
+.checkbox-container { display: flex; align-items: center; justify-content: center; min-width: 35px; padding-top: 5px; }
+.match-checkbox { width: 26px; height: 26px; cursor: pointer; accent-color: var(--accent); }
+
+/* Modal Pop-up */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+.modal-content { background: white; padding: 20px; border-radius: 10px; width: 100%; max-width: 380px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.modal h3 { margin-bottom: 15px; font-size: 1.1rem; color: var(--primary); }
+.modal label { font-weight: bold; font-size: 0.85rem; display: block; margin-top: 10px; margin-bottom: 4px; }
+.modal select, .modal input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.95rem; }
+.modal-buttons { display: flex; gap: 10px; margin-top: 15px; }
+.btn { flex: 1; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
+.btn-confirm { background: var(--accent); color: white; }
+.btn-cancel { background: #7f8c8d; color: white; }
+.divider { text-align: center; margin: 8px 0; font-size: 0.8rem; color: #888; position: relative; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tennis Speelschema</h1>
+  <p>Spelers per datum (Indeling op de avond zelf)</p>
+</header>
+
+<div class="sync-status" id="syncStatus">Status: Synchroniseren met live database...</div>
+
+<!-- Live Teller -->
+<div class="stats-bar">
+  <span>Gespeelde Avonden:</span>
+  <span class="counter" id="liveCounter">0 / 0</span>
+</div>
+
+<!-- Totaaltelling Dashboard -->
+<div class="totaal-card">
+  <h2>Totaal Avonden per Speler</h2>
+  <div class="totaal-grid" id="totaalGrid"></div>
+</div>
+
+<!-- Container voor het schema -->
+<div id="schemaContainer"></div>
+
+<!-- Ruil & Vervang Modal -->
+<div class="modal" id="ruilModal">
+  <div class="modal-content">
+    <h3 id="modalTitel">Speler wijzigen</h3>
+
+    <label for="ruilSelectie">Optie 1: Ruil positie met iemand anders op deze avond</label>
+    <select id="ruilSelectie">
+      <option value="">-- Kies speler om mee te ruilen --</option>
+    </select>
+
+    <div class="divider">— OF —</div>
+
+    <label>Optie 2: Vervang door vaste speler of invaller</label>
+    <select id="spelerSelectie">
+      <option value="">-- Kies een vaste speler --</option>
+    </select>
+    <input type="text" id="invallerNaam" placeholder="Of typ naam nieuwe invaller...">
+
+    <div class="modal-buttons">
+      <button class="btn btn-cancel" onclick="sluitModal()">Annuleren</button>
+      <button class="btn btn-confirm" onclick="bevestigActie()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Extra Speler Toevoegen Modal -->
+<div class="modal" id="toevoegModal">
+  <div class="modal-content">
+    <h3>Speler Toevoegen</h3>
+    <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Voeg een extra speler toe aan deze avond:</p>
+
+    <select id="nieuwSpelerSelectie">
+      <option value="">-- Kies uit vaste spelers --</option>
+    </select>
+    <input type="text" id="nieuwInvallerNaam" placeholder="Of typ naam invaller...">
+
+    <div class="modal-buttons">
+      <button class="btn btn-cancel" onclick="sluitModal()">Annuleren</button>
+      <button class="btn btn-confirm" onclick="bevestigToevoegen()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// VUL HIER JOUW FIREBASE REALTIME DATABASE URL IN:
+// (Vergeet de /schema.json aan het einde niet)
+// ==========================================
+const FIREBASE_URL = "https://tennisapp-f018c-default-rtdb.europe-west1.firebasedatabase.app/";
+
+// De 8 vaste spelers
+const vasteSpelers = ["Wim", "Ben", "Piet", "Harry", "Herman", "Kees", "Edwin", "Maik"];
+
+// Standaard schema
+const standaardSchema = [
+  { id: 1, datum: "Vrijdag 9 oktober 2026", spelers: ["Wim", "Ben", "Herman", "Kees"], gespeeld: false },
+  { id: 2, datum: "Vrijdag 23 oktober 2026", spelers: ["Ben", "Piet", "Herman", "Maik"], gespeeld: false },
+  { id: 3, datum: "Vrijdag 6 november 2026", spelers: ["Wim", "Piet", "Harry", "Maik"], gespeeld: false },
+  { id: 4, datum: "Vrijdag 20 november 2026", spelers: ["Harry", "Kees", "Edwin", "Maik"], gespeeld: false },
+  { id: 5, datum: "Vrijdag 4 december 2026", spelers: ["Wim", "Ben", "Herman", "Edwin"], gespeeld: false },
+  { id: 6, datum: "Vrijdag 18 december 2026", spelers: ["Wim", "Piet", "Kees", "Edwin"], gespeeld: false },
+  { id: 7, datum: "Vrijdag 15 januari 2027", spelers: ["Piet", "Harry", "Kees", "Maik"], gespeeld: false },
+  { id: 8, datum: "Vrijdag 29 januari 2027", spelers: ["Wim", "Harry", "Herman", "Edwin"], gespeeld: false },
+  { id: 9, datum: "Vrijdag 12 februari 2027", spelers: ["Harry", "Herman", "Kees", "Edwin"], gespeeld: false },
+  { id: 10, datum: "Vrijdag 26 februari 2027", spelers: ["Piet", "Herman", "Kees", "Maik"], gespeeld: false },
+  { id: 11, datum: "Vrijdag 12 maart 2027", spelers: ["Ben", "Kees", "Edwin", "Maik"], gespeeld: false },
+  { id: 12, datum: "Vrijdag 26 maart 2027", spelers: ["Wim", "Ben", "Piet", "Herman"], gespeeld: false },
+  { id: 13, datum: "Vrijdag 9 april 2027", spelers: ["Ben", "Piet", "Harry", "Edwin"], gespeeld: false }
+];
+
+let schemaData = [];
+let geselecteerdeMatchId = null;
+let geselecteerdeSpelerIndex = null;
+
+// Haal de live data op uit Firebase
+async function laadLiveData() {
+  try {
+    const response = await fetch(FIREBASE_URL);
+    const data = await response.json();
+    
+    if (data) {
+      schemaData = data;
+    } else {
+      // Als de database nog leeg is, vul hem met het standaardschema
+      schemaData = JSON.parse(JSON.stringify(standaardSchema));
+      await slaLiveDataOp();
+    }
+    
+    document.getElementById('syncStatus').innerHTML = 'Status: <span class="status-online">● Live gesynchroniseerd</span>';
+    bouwSchema();
+  } catch (error) {
+    console.error("Fout bij ophalen van data:", error);
+    document.getElementById('syncStatus').innerText = "Status: Fout bij synchroniseren met database";
+  }
+}
+
+// Sla wijzigingen direct op in Firebase
+async function slaLiveDataOp() {
+  document.getElementById('syncStatus').innerText = "Status: Opslaan...";
+  try {
+    await fetch(FIREBASE_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(schemaData)
+    });
+    document.getElementById('syncStatus').innerHTML = 'Status: <span class="status-online">● Live gesynchroniseerd</span>';
+  } catch (error) {
+    console.error("Fout bij opslaan:", error);
+    document.getElementById('syncStatus').innerText = "Status: Kon niet opslaan";
+  }
+}
+
+function bouwSchema() {
+  const container = document.getElementById('schemaContainer');
+  container.innerHTML = '';
+
+  schemaData.forEach(w => {
+    const card = document.createElement('div');
+    card.className = 'datum-card';
+
+    let spelersHtml = '<div class="players-box">';
+    w.spelers.forEach((speler, index) => {
+      spelersHtml += `
+        <div class="player-wrapper">
+          <span class="player" onclick="openRuilModal(${w.id}, ${index})">${speler}</span>
+          ${w.spelers.length > 1 ? `<button class="btn-remove" title="Verwijder speler" onclick="verwijderSpeler(${w.id},${index})">✕</button>` : ''}
+        </div>`;
+    });
+    spelersHtml += '</div>';
+
+    const waText = encodeURIComponent(`Hallo tennissers! 🎾\n\nHerinnering voor *${w.datum}*:\nSpelers: ${w.spelers.join(', ')}.\n\nTot dan op de baan!`);
+    const waLink = `https://api.whatsapp.com/send?text=${waText}`;
+
+    card.innerHTML = `
+      <div class="datum-header">${w.datum}</div>
+      <div class="match-row">
+        ${spelersHtml}
+        <div class="checkbox-container">
+          <input type="checkbox" class="match-checkbox" ${w.gespeeld ? 'checked' : ''} onchange="updateStatus(${w.id}, this.checked)">
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-add-player" onclick="openToevoegModal(${w.id})">+ Speler toevoegen</button>
+        <a href="${waLink}" target="_blank" class="btn-whatsapp">📲 WhatsApp Herinnering</a>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  updateTellers();
+}
+
+function updateTellers() {
+  const totaal = schemaData.length;
+  const gespeeld = schemaData.filter(w => w.gespeeld).length;
+  document.getElementById('liveCounter').innerText = `${gespeeld} / ${totaal}`;
+
+  const tellingen = {};
+  vasteSpelers.forEach(speler => {
+    tellingen[speler] = { totaal: 0, gespeeld: 0 };
+  });
+
+  schemaData.forEach(w => {
+    w.spelers.forEach(speler => {
+      if (!tellingen[speler]) {
+        tellingen[speler] = { totaal: 0, gespeeld: 0 };
+      }
+      tellingen[speler].totaal += 1;
+      if (w.gespeeld) {
+        tellingen[speler].gespeeld += 1;
+      }
+    });
+  });
+
+  const totaalGrid = document.getElementById('totaalGrid');
+  totaalGrid.innerHTML = '';
+
+  Object.keys(tellingen).forEach(speler => {
+    const data = tellingen[speler];
+    if (data.totaal > 0 || vasteSpelers.includes(speler)) {
+      totaalGrid.innerHTML += `
+        <div class="totaal-item">
+          <div class="totaal-naam">${speler}</div>
+          <div class="totaal-aantal">${data.totaal}x</div>
+          <div class="totaal-details">${data.gespeeld} gespeeld</div>
+        </div>
+      `;
+    }
+  });
+}
+
+async function updateStatus(id, isChecked) {
+  const item = schemaData.find(w => w.id === id);
+  if (item) {
+    item.gespeeld = isChecked;
+    await slaLiveDataOp();
+    updateTellers();
+  }
+}
+
+function openRuilModal(matchId, spelerIndex) {
+  geselecteerdeMatchId = matchId;
+  geselecteerdeSpelerIndex = spelerIndex;
+
+  const item = schemaData.find(w => w.id === matchId);
+  const huidigeNaam = item.spelers[spelerIndex];
+
+  document.getElementById('modalTitel').innerText = `Wijzig / Ruil "${huidigeNaam}"`;
+  document.getElementById('invallerNaam').value = '';
+
+  const ruilSelect = document.getElementById('ruilSelectie');
+  ruilSelect.innerHTML = '<option value="">-- Kies speler om mee te ruilen --</option>';
+  item.spelers.forEach((s, idx) => {
+    if (idx !== spelerIndex) {
+      ruilSelect.innerHTML += `<option value="${idx}">${s}</option>`;
+    }
+  });
+
+  const spelerSelect = document.getElementById('spelerSelectie');
+  spelerSelect.innerHTML = '<option value="">-- Kies een vaste speler --</option>';
+  vasteSpelers.forEach(speler => {
+    spelerSelect.innerHTML += `<option value="${speler}">${speler}</option>`;
+  });
+
+  document.getElementById('ruilModal').style.display = 'flex';
+}
+
+async function bevestigActie() {
+  const item = schemaData.find(w => w.id === geselecteerdeMatchId);
+  if (!item) return;
+
+  const ruilIndex = document.getElementById('ruilSelectie').value;
+  const selectWaarde = document.getElementById('spelerSelectie').value;
+  const invallerWaarde = document.getElementById('invallerNaam').value.trim();
+
+  if (ruilIndex !== "") {
+    const targetIdx = parseInt(ruilIndex);
+    const temp = item.spelers[geselecteerdeSpelerIndex];
+    item.spelers[geselecteerdeSpelerIndex] = item.spelers[targetIdx];
+    item.spelers[targetIdx] = temp;
+  }
+  else if (invallerWaarde !== '') {
+    item.spelers[geselecteerdeSpelerIndex] = invallerWaarde;
+  } 
+  else if (selectWaarde !== '') {
+    item.spelers[geselecteerdeSpelerIndex] = selectWaarde;
+  }
+
+  bouwSchema();
+  await slaLiveDataOp();
+  sluitModal();
+}
+
+function openToevoegModal(matchId) {
+  geselecteerdeMatchId = matchId;
+  document.getElementById('nieuwInvallerNaam').value = '';
+
+  const select = document.getElementById('nieuwSpelerSelectie');
+  select.innerHTML = '<option value="">-- Kies uit vaste spelers --</option>';
+  vasteSpelers.forEach(speler => {
+    select.innerHTML += `<option value="${speler}">${speler}</option>`;
+  });
+
+  document.getElementById('toevoegModal').style.display = 'flex';
+}
+
+async function bevestigToevoegen() {
+  const item = schemaData.find(w => w.id === geselecteerdeMatchId);
+  if (!item) return;
+
+  const selectWaarde = document.getElementById('nieuwSpelerSelectie').value;
+  const invallerWaarde = document.getElementById('nieuwInvallerNaam').value.trim();
+
+  let naamOmToeTeVoegen = invallerWaarde || selectWaarde;
+
+  if (naamOmToeTeVoegen !== '') {
+    item.spelers.push(naamOmToeTeVoegen);
+    bouwSchema();
+    await slaLiveDataOp();
+  }
+  sluitModal();
+}
+
+async function verwijderSpeler(matchId, index) {
+  const item = schemaData.find(w => w.id === matchId);
+  if (item && item.spelers.length > 1) {
+    const spelerNaam = item.spelers[index];
+    const bevestig = confirm(`Weet je zeker dat je "${spelerNaam}" wilt verwijderen op ${item.datum}?`);
+    
+    if (bevestig) {
+      item.spelers.splice(index, 1);
+      bouwSchema();
+      await slaLiveDataOp();
+    }
+  }
+}
+
+function sluitModal() {
+  document.getElementById('ruilModal').style.display = 'none';
+  document.getElementById('toevoegModal').style.display = 'none';
+}
+
+// Initialisatie & elke 10 seconden automatisch verversen voor live updates van anderen
+laadLiveData();
+setInterval(laadLiveData, 10000);
+</script>
+
+</body>
+</html>
