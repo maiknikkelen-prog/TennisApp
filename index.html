@@ -36,12 +36,24 @@ body { background-color: var(--bg); color: var(--text); padding: 15px; padding-b
 header { background: var(--primary); color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
 h1 { font-size: 1.3rem; margin-bottom: 5px; }
 
+/* Login Screen Styling */
+#loginContainer { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, var(--primary), var(--accent)); }
+.login-box { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); width: 100%; max-width: 350px; }
+.login-box h2 { color: var(--primary); margin-bottom: 30px; text-align: center; font-size: 1.5rem; }
+.login-box label { display: block; margin-top: 15px; margin-bottom: 8px; color: var(--primary); font-weight: bold; }
+.login-box input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+.login-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 5px rgba(39,174,96,0.3); }
+.login-box button { width: 100%; margin-top: 25px; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+.login-box button:hover { background: #229954; }
+.login-error { color: #e74c3c; font-size: 0.9rem; margin-top: 10px; text-align: center; display: none; }
+#appContainer { display: none; }
+
 /* Status indicator */
 .sync-status { text-align: center; font-size: 0.8rem; color: #7f8c8d; margin-top: -10px; margin-bottom: 15px; }
 .status-online { color: var(--accent); font-weight: bold; }
 
 /* Dashboard & Tellers */
-.stats-bar { background: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; font-weight: bold; }
+.stats-bar { background: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; }
 .counter { color: var(--accent); font-size: 1.2rem; }
 
 /* Spelers Totaaltelling Dashboard */
@@ -75,7 +87,7 @@ h1 { font-size: 1.3rem; margin-bottom: 5px; }
 .btn-add-player { background: transparent; border: 1px dashed var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; }
 .btn-add-player:hover { background: rgba(39, 174, 96, 0.1); }
 
-.btn-whatsapp { background: var(--whatsapp); color: white; border: none; padding: 6px 12px; border-radius: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; }
+.btn-whatsapp { background: var(--whatsapp); color: white; border: none; padding: 6px 12px; border-radius: 5px; font-size: 0.85rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; }
 .btn-whatsapp:hover { opacity: 0.9; }
 
 /* Checkbox Styling */
@@ -97,6 +109,19 @@ h1 { font-size: 1.3rem; margin-bottom: 5px; }
 </head>
 <body>
 
+<!-- Login Container -->
+<div id="loginContainer">
+  <div class="login-box">
+    <h2>🎾 Tennis App</h2>
+    <label for="loginUsername">Gebruikersnaam:</label>
+    <input type="text" id="loginUsername" placeholder="Voer gebruikersnaam in...">
+    <button onclick="controleerInlog()">Inloggen</button>
+    <div class="login-error" id="loginError">Ongeldige gebruikersnaam</div>
+  </div>
+</div>
+
+<!-- App Container (verborgen tot login) -->
+<div id="appContainer" style="display: none;">
 <header>
   <h1>Tennis Speelschema</h1>
   <p>Spelers per datum (Indeling op de avond zelf)</p>
@@ -161,8 +186,47 @@ h1 { font-size: 1.3rem; margin-bottom: 5px; }
     </div>
   </div>
 </div>
+</div>
 
 <script>
+// Login-instellingen
+const VASTE_GEBRUIKERSNAAM = "KWtennis?";
+
+function controleerInlog() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const errorMsg = document.getElementById('loginError');
+  
+  if (username === VASTE_GEBRUIKERSNAAM) {
+    // Login succesvol
+    sessionStorage.setItem('isLoggedIn', 'true');
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    laadLiveData();
+  } else {
+    // Login mislukt
+    errorMsg.style.display = 'block';
+    document.getElementById('loginUsername').value = '';
+  }
+}
+
+// Check bij pagina laden of gebruiker al ingelogd is
+window.addEventListener('load', function() {
+  if (sessionStorage.getItem('isLoggedIn') === 'true') {
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    laadLiveData();
+  }
+});
+
+// Enter-toets werkt ook voor inloggen
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('loginUsername').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      controleerInlog();
+    }
+  });
+});
+
 // Firebase Realtime Database URL met /schema.json gecorrigeerd
 const FIREBASE_URL = "https://tennisapp-f018c-default-rtdb.europe-west1.firebasedatabase.app/schema.json";
 
@@ -432,9 +496,12 @@ function sluitModal() {
   document.getElementById('toevoegModal').style.display = 'none';
 }
 
-// Start-up en automatische verversing om de 10 seconden
-laadLiveData();
-setInterval(laadLiveData, 10000);
+// Automatische verversing om de 10 seconden (alleen als ingelogd)
+setInterval(function() {
+  if (sessionStorage.getItem('isLoggedIn') === 'true') {
+    laadLiveData();
+  }
+}, 10000);
 </script>
 
 </body>
